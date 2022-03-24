@@ -16,6 +16,7 @@
  *
  *=========================================================================*/
 #include "ITKFFTExport.h"
+#include "itkVkFFTImageFilterInitFactory.h"
 
 #include "itkVkComplexToComplex1DFFTImageFilter.h"
 #include "itkVkComplexToComplexFFTImageFilter.h"
@@ -27,7 +28,7 @@
 #include "itkVkInverseFFTImageFilter.h"
 #include "itkVkRealToHalfHermitianForwardFFTImageFilter.h"
 
-#include "itkVkFFTImageFilterInitFactory.h"
+#include "itkFFTDiscreteGaussianImageFilterFactory.h"
 
 namespace itk
 {
@@ -54,6 +55,8 @@ void VkFFTImageFilterInitFactory::RegisterFactories()
                                           itk::ObjectFactoryEnums::InsertionPosition::INSERT_AT_FRONT);
   itk::ObjectFactoryBase::RegisterFactory(FFTImageFilterFactory<VkRealToHalfHermitianForwardFFTImageFilter>::New(),
                                           itk::ObjectFactoryEnums::InsertionPosition::INSERT_AT_FRONT);
+
+  itk::ObjectFactoryBase::RegisterFactory(FFTDiscreteGaussianImageFilterFactory::New());
 }
 
 // Undocumented API used to register during static initialization.

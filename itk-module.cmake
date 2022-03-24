@@ -16,6 +16,8 @@ itk_module(VkFFTBackend
     ITKCommon
     ITKStatistics
     ITKFFT
+    ITKConvolution
+    ITKSmoothing
   COMPILE_DEPENDS
     ITKImageSources
   TEST_DEPENDS
