@@ -26,6 +26,9 @@
 #include "itkMetaDataObject.h"
 #include "itkProgressReporter.h"
 
+#include "itkVkCommon.h"
+#include "itkVkGPU.h"
+
 namespace itk
 {
 template <typename TInputImage, typename TOutputImage>
@@ -60,7 +63,7 @@ VkComplexToComplex1DFFTImageFilter<TInputImage, TOutputImage>::GenerateData()
   itkAssertOrThrowMacro(inBytes == outBytes, "CPU input and output buffers are of different sizes.");
 
   // Mostly use defaults for VkCommon::VkGPU
-  typename VkCommon::VkGPU vkGPU;
+  VkGPU vkGPU;
   vkGPU.device_id = m_DeviceID;
 
   // Describe this filter in VkCommon::VkParameters

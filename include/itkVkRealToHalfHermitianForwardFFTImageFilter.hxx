@@ -25,6 +25,9 @@
 #include "itkProgressReporter.h"
 #include "itkMultiThreaderBase.h"
 
+#include "itkVkCommon.h"
+#include "itkVkGPU.h"
+
 #include <iostream>
 
 namespace itk
@@ -65,7 +68,7 @@ VkRealToHalfHermitianForwardFFTImageFilter<TInputImage, TOutputImage>::GenerateD
   const SizeValueType outBytes{ output->GetLargestPossibleRegion().GetNumberOfPixels() * sizeof(OutputPixelType) };
 
   // Mostly use defaults for VkCommon::VkGPU
-  typename VkCommon::VkGPU vkGPU;
+  VkGPU vkGPU;
   vkGPU.device_id = m_DeviceID;
 
   // Describe this filter in VkCommon::VkParameters

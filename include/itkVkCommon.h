@@ -21,6 +21,7 @@
 #include "VkFFTBackendExport.h"
 #include "itkDataObject.h"
 #include "vkFFT.h"
+#include "itkVkGPU.h"
 
 namespace itk
 {
@@ -92,22 +93,6 @@ public:
              this->normalized != rhs.normalized || this->inputCPUBuffer != rhs.inputCPUBuffer ||
              this->inputBufferBytes != rhs.inputBufferBytes || this->outputCPUBuffer != rhs.outputCPUBuffer ||
              this->outputBufferBytes != rhs.outputBufferBytes;
-    }
-  };
-
-  struct VkGPU
-  {
-    cl_platform_id   platform = 0;
-    cl_device_id     device = 0;
-    cl_context       context = 0;
-    cl_command_queue commandQueue = 0;
-    uint64_t         device_id = 0; // default value
-
-    bool
-    operator!=(const VkGPU & rhs) const
-    {
-      return this->platform != rhs.platform || this->device != rhs.device || this->context != rhs.context ||
-             this->commandQueue != rhs.commandQueue || this->device_id != rhs.device_id;
     }
   };
 

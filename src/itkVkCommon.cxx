@@ -16,6 +16,7 @@
  *
  *=========================================================================*/
 #include "itkVkCommon.h"
+#include "itkVkGPU.h"
 #include "itkMacro.h"
 #include <complex>
 #include <iostream>
