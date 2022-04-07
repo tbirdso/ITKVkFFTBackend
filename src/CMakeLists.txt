@@ -6,11 +6,13 @@ set(VkFFTBackend_SRCS
 itk_module_add_library(VkFFTBackend ${VkFFTBackend_SRCS})
 
 if(${VKFFT_BACKEND} EQUAL 1)
-	target_link_libraries(VkFFTBackend PUBLIC ${CUDA_LIBRARIES} cuda ${CUDA_NVRTC_LIB} VkFFT half)
+	target_link_libraries(VkFFTBackend PUBLIC ${CUDA_LIBRARIES} ${CUDA_NVRTC_LIB} VkFFT half)
+        message(WARNING "CUDA libraries: ${CUDA_LIBRARIES}")
 if(MSVC)
 else()
   set_source_files_properties(itkVkCommon.cpp PROPERTIES LANGUAGE CUDA)
 endif()
+include_directories(VkFFTBackend PUBLIC ${CUDA_TOOLKIT_INCLUDE})
 target_compile_options(VkFFTBackend PUBLIC "$<$<COMPILE_LANGUAGE:CUDA>:SHELL
   -DVKFFT_BACKEND=${VKFFT_BACKEND}
   -gencode arch=compute_35,code=compute_35

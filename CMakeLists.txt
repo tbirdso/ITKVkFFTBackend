@@ -11,7 +11,7 @@ endif()
 
 set(VKFFT_BACKEND 3 CACHE STRING "0 - Vulkan, 1 - CUDA, 2 - HIP, 3 - OpenCL")
 if(${VKFFT_BACKEND} EQUAL 1)
-# pass
+include_directories(${CUDA_TOOLKIT_INCLUDE})
 elseif(${VKFFT_BACKEND} EQUAL 3)
 ## When this module is loaded by an app, load OpenCL too.
 set(VkFFTBackend_EXPORT_CODE_INSTALL "
@@ -34,8 +34,8 @@ include(FetchContent)
 add_definitions(-DVKFFT_BACKEND=${VKFFT_BACKEND} -DCL_TARGET_OPENCL_VERSION=120)
 set(vulkan_GIT_REPOSITORY "https://github.com/DTolm/VkFFT") # original source
 set(vulkan_GIT_TAG        "3aecc219153f97aaa46e613abbf430033eb27512")
-# set(vulkan_GIT_REPOSITORY "https://github.com/Leengit/VkFFT") # Kitware copy of original source
-# set(vulkan_GIT_TAG        "0c5ddfffe1af9ac96c21d4c38941f9b5481b73c3")
+#set(vulkan_GIT_REPOSITORY "https://github.com/tbirdso/VkFFT") # Kitware copy of original source
+#set(vulkan_GIT_TAG        "7e49f9993df63aae1c79303a3d025b358dd1afd0")
 FetchContent_Declare(
   vulkan_lib
   GIT_REPOSITORY ${vulkan_GIT_REPOSITORY}
