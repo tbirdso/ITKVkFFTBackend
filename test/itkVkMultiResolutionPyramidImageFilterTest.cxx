@@ -60,8 +60,7 @@ itkVkMultiResolutionPyramidImageFilterTest(int argc, char * argv[])
   auto inputImage = itk::ReadImage<ImageType>(argv[1]);
 
   auto kernelCondition =
-    (argc > 3 && std::atoi(argv[3]) == 1 ? itk::VkMultiResolutionPyramidImageFilterEnums::KernelThresholdType::ALL
-                                         : itk::VkMultiResolutionPyramidImageFilterEnums::KernelThresholdType::ANY);
+    (argc > 3 ? std::atoi(argv[3]) : ImageDimension);
   bool useShrinkFilter = (argc > 4 && std::atoi(argv[4]) == 1);
   unsigned int numLevels = (argc > 5 ? std::atoi(argv[5]) : 3);
 
@@ -85,11 +84,13 @@ itkVkMultiResolutionPyramidImageFilterTest(int argc, char * argv[])
   pyramid->SetStartingShrinkFactors(factors.Begin());*/
 
   // TODO test get variance
+  using RadiusSizeType = typename PyramidType::OutputSizeType;
+  RadiusSizeType radius, prevRadius;
   for (unsigned int level = 0; level < numLevels; ++level)
   {
     auto schedule = pyramidFilter->GetSchedule();
     auto variance = pyramidFilter->GetVariance(level);
-    auto radius = pyramidFilter->GetKernelRadius(level);
+    radius = pyramidFilter->GetKernelRadius(level);
 
     for (unsigned int dim = 0; dim < ImageDimension; ++dim)
     {
@@ -98,7 +99,11 @@ itkVkMultiResolutionPyramidImageFilterTest(int argc, char * argv[])
       // so just test that radius decreases with level
       if (level > 0)
       {
-        ITK_TEST_EXPECT_TRUE(radius < pyramidFilter->GetKernelRadius(level - 1));
+        ITK_TEST_EXPECT_TRUE(radius[dim] == 1 || prevRadius[dim] == 1 || radius[dim] < prevRadius[dim]);
+      }
+      else
+      {
+        prevRadius = radius;
       }
     }
   }

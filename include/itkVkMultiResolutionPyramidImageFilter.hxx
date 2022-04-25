@@ -50,9 +50,9 @@ VkMultiResolutionPyramidImageFilter<TInputImage, TOutputImage>::GenerateData()
   using ResampleShrinkerType = ResampleImageFilter<TOutputImage, TOutputImage>;
   using ShrinkerType = ShrinkImageFilter<TOutputImage, TOutputImage>;
 
-  auto caster = CasterType::New();
-  auto spatialSmoother = SpatialSmootherType::New();
-  auto fftSmoother = FFTSmootherType::New();
+  auto                      caster = CasterType::New();
+  auto                      spatialSmoother = SpatialSmootherType::New();
+  auto                      fftSmoother = FFTSmootherType::New();
   BaseSmootherType::Pointer smoother;
 
   typename ImageToImageType::Pointer shrinkerFilter;
@@ -88,11 +88,11 @@ VkMultiResolutionPyramidImageFilter<TInputImage, TOutputImage>::GenerateData()
 
   // shrinkerFilter->SetInput(smoother->GetOutput());
 
-  unsigned int ilevel, idim;
-  unsigned int factors[ImageDimension];
+  unsigned int   ilevel, idim;
+  unsigned int   factors[ImageDimension];
   VarianceType   variance;
-  OutputSizeType     radius;
-  bool         useFFTSmoothing = false;
+  OutputSizeType radius;
+  bool           useFFTSmoothing = false;
 
   for (ilevel = 0; ilevel < m_NumberOfLevels; ++ilevel)
   {
@@ -110,32 +110,17 @@ VkMultiResolutionPyramidImageFilter<TInputImage, TOutputImage>::GenerateData()
     }
 
     // compute kernel radius and select smoother type
-    // TODO clean up
+    useFFTSmoothing = false;
+    unsigned int thresholdExceededCount = 0;
     radius = this->GetKernelRadius(ilevel);
-    if (m_KernelThresholdCondition == VkMultiResolutionPyramidImageFilterEnums::KernelThresholdType::ANY)
+    for (idim = 0; idim < ImageDimension; ++idim)
     {
-      useFFTSmoothing = false;
-      for (idim = 0; idim < ImageDimension; ++idim)
+      if (radius[idim] >= m_KernelRadiusThreshold[idim])
       {
-          if (radius[idim] >= m_KernelRadiusThreshold[idim])
-          {
-            useFFTSmoothing = true;
-            break;
-        }
+        ++thresholdExceededCount;
       }
     }
-    else // ALL
-    {
-      useFFTSmoothing = true;
-      for (idim = 0; idim < ImageDimension; ++idim)
-      {
-        if (radius[idim] < m_KernelRadiusThreshold[idim])
-          {
-            useFFTSmoothing = false;
-            break;
-        }
-      }
-    }
+    useFFTSmoothing = (thresholdExceededCount >= m_KernelThresholdDimension);
 
     // Compute
 
@@ -152,6 +137,7 @@ VkMultiResolutionPyramidImageFilter<TInputImage, TOutputImage>::GenerateData()
     }
 
     // use mini-pipeline to compute output
+    std::cout << "ilevel: " << ilevel << " use smoothing: " << useFFTSmoothing << std::endl;
     smoother = (useFFTSmoothing ? fftSmoother : spatialSmoother);
     variance = this->GetVariance(ilevel);
     smoother->SetVariance(variance);
@@ -171,7 +157,7 @@ typename VkMultiResolutionPyramidImageFilter<TInputImage, TOutputImage>::OutputS
 VkMultiResolutionPyramidImageFilter<TInputImage, TOutputImage>::GetKernelRadius(unsigned int ilevel) const
 {
   using OperatorType = itk::GaussianOperator<OutputPixelType, ImageDimension>;
-  auto *   oper = new OperatorType;
+  auto *         oper = new OperatorType;
   OutputSizeType radius;
   for (unsigned int dim = 0; dim < ImageDimension; ++dim)
   {
@@ -207,7 +193,7 @@ VkMultiResolutionPyramidImageFilter<TInputImage, TOutputImage>::PrintSelf(std::o
   Superclass::PrintSelf(os, indent);
 
   os << indent << "Kernel radius threshold: " << m_KernelRadiusThreshold << std::endl;
-  os << indent << "Kernel threshold condition: " << m_KernelThresholdCondition << std::endl;
+  os << indent << "Kernel threshold dimension: " << m_KernelThresholdDimension << std::endl;
 }
 } // namespace itk
 
