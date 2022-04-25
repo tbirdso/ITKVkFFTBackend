@@ -91,7 +91,7 @@ VkMultiResolutionPyramidImageFilter<TInputImage, TOutputImage>::GenerateData()
   unsigned int   ilevel, idim;
   unsigned int   factors[ImageDimension];
   VarianceType   variance;
-  OutputSizeType radius;
+  KernelSizeType radius;
   bool           useFFTSmoothing = false;
 
   for (ilevel = 0; ilevel < m_NumberOfLevels; ++ilevel)
@@ -138,7 +138,14 @@ VkMultiResolutionPyramidImageFilter<TInputImage, TOutputImage>::GenerateData()
 
     // use mini-pipeline to compute output
     std::cout << "ilevel: " << ilevel << " use smoothing: " << useFFTSmoothing << std::endl;
-    smoother = (useFFTSmoothing ? fftSmoother : spatialSmoother);
+    if (GetUseFFT(this->GetKernelRadius(ilevel)))
+    {
+      smoother = fftSmoother;
+    }
+    else
+    {
+      smoother = spatialSmoother;
+    }
     variance = this->GetVariance(ilevel);
     smoother->SetVariance(variance);
     shrinkerFilter->SetInput(smoother->GetOutput());
@@ -153,12 +160,28 @@ VkMultiResolutionPyramidImageFilter<TInputImage, TOutputImage>::GenerateData()
 }
 
 template <typename TInputImage, typename TOutputImage>
-typename VkMultiResolutionPyramidImageFilter<TInputImage, TOutputImage>::OutputSizeType
+bool
+VkMultiResolutionPyramidImageFilter<TInputImage, TOutputImage>::GetUseFFT(const KernelSizeType & kernelRadius) const
+{
+  // compute kernel radius and select smoother type
+  unsigned int thresholdExceededCount = 0;
+  for (unsigned int idim = 0; idim < ImageDimension; ++idim)
+  {
+    if (kernelRadius[idim] >= m_KernelRadiusThreshold[idim])
+    {
+      ++thresholdExceededCount;
+    }
+  }
+  return thresholdExceededCount >= m_KernelThresholdDimension;
+}
+
+template <typename TInputImage, typename TOutputImage>
+typename VkMultiResolutionPyramidImageFilter<TInputImage, TOutputImage>::KernelSizeType
 VkMultiResolutionPyramidImageFilter<TInputImage, TOutputImage>::GetKernelRadius(unsigned int ilevel) const
 {
   using OperatorType = itk::GaussianOperator<OutputPixelType, ImageDimension>;
   auto *         oper = new OperatorType;
-  OutputSizeType radius;
+  KernelSizeType radius;
   for (unsigned int dim = 0; dim < ImageDimension; ++dim)
   {
     oper->SetDirection(dim);

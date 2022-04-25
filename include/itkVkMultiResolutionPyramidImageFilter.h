@@ -73,8 +73,10 @@ public:
   using typename Superclass::InputImageConstPointer;
   using OutputPixelType = typename OutputImageType::PixelType;
   using OutputSizeType = typename OutputImageType::SizeType;
+
   using typename Superclass::ScheduleType;
   using VarianceType = itk::Vector<double, ImageDimension>;
+  using KernelSizeType = OutputSizeType;
 
   /** Types for acceleration.
    *  Assumes and does not verify that FFT backend is accelerated. */
@@ -87,8 +89,15 @@ public:
    *  versus GPU-based FFT smoothing. Should be adjusted to match
    *  benchmarks for individual hardware setup. Defaults to 10.
    */
-  itkSetMacro(KernelRadiusThreshold, OutputSizeType);
-  itkGetConstMacro(KernelRadiusThreshold, OutputSizeType);
+  itkSetMacro(KernelRadiusThreshold, KernelSizeType);
+  itkGetConstMacro(KernelRadiusThreshold, KernelSizeType);
+
+  void
+      SetKernelRadiusThreshold(unsigned int threshold)
+  {
+      // Set threshold value in all directions
+    m_KernelRadiusThreshold.Fill(threshold);
+  }
 
   /** Set the number of directions for which the kernel radius
    *  threshold must be surpassed to prompt a switch between
@@ -114,13 +123,18 @@ public:
   itkGetMacro(KernelThresholdDimension, unsigned int);
 
   /** Estimate the kernel radius from ilevel settings */
-  OutputSizeType
+  KernelSizeType
   GetKernelRadius(unsigned int ilevel) const;
 
   /** Get the kernel variance for the given pyramid level
    *  based on the current schedule */
   VarianceType
   GetVariance(unsigned int ilevel) const;
+
+  /** Get whether FFT smoothing will be used for the given
+   *  pyramid level */
+  bool
+  GetUseFFT(const KernelSizeType & kernelRadius) const;
 
 protected:
   VkMultiResolutionPyramidImageFilter();
@@ -134,7 +148,7 @@ protected:
   PrintSelf(std::ostream & os, Indent indent) const override;
 
 protected:
-  OutputSizeType m_KernelRadiusThreshold;
+  KernelSizeType m_KernelRadiusThreshold;
   unsigned int   m_KernelThresholdDimension = 1;
 };
 } // namespace itk

@@ -48,7 +48,9 @@ itkVkMultiResolutionPyramidImageFilterTest(int argc, char * argv[])
   {
     std::cerr << "Missing Parameters." << std::endl;
     std::cerr << "Usage: " << itkNameOfTestExecutableMacro(argv);
-    std::cerr << " inputImage outputImage [kernelCondition] [useShrinkFilter] [numLevels]" << std::endl;
+    std::cerr << " inputImage outputImage <threshold0> [threshold1] [kernelThresholdDimension] [useShrinkFilter] "
+                 "[numLevels] [expectedFFTLevelCount]"
+              << std::endl;
     std::cerr << std::flush;
     return EXIT_FAILURE;
   }
@@ -59,42 +61,76 @@ itkVkMultiResolutionPyramidImageFilterTest(int argc, char * argv[])
 
   auto inputImage = itk::ReadImage<ImageType>(argv[1]);
 
-  auto kernelCondition =
-    (argc > 3 ? std::atoi(argv[3]) : ImageDimension);
-  bool useShrinkFilter = (argc > 4 && std::atoi(argv[4]) == 1);
-  unsigned int numLevels = (argc > 5 ? std::atoi(argv[5]) : 3);
+  using PyramidType = itk::VkMultiResolutionPyramidImageFilter<ImageType, ImageType>;
+  using ScheduleType = typename PyramidType::ScheduleType;
+  using KernelSizeType = typename PyramidType::KernelSizeType;
+
+  KernelSizeType kernelRadiusThreshold;
+  if (argc == 4)
+  {
+    kernelRadiusThreshold.Fill(std::atoi(argv[3]));
+  }
+  else if (argc > 4)
+  {
+    kernelRadiusThreshold[0] = std::atoi(argv[3]);
+    kernelRadiusThreshold[1] = std::atoi(argv[4]);
+  }
+  else
+  {
+    kernelRadiusThreshold.Fill(10);
+  }
+
+  auto         kernelThresholdDimension = (argc > 5 ? std::atoi(argv[5]) : 1);
+  bool         useShrinkFilter = (argc > 6 && std::atoi(argv[6]) == 1);
+  unsigned int numLevels = (argc > 7 ? std::atoi(argv[7]) : 3);
+  int          expectedFFTCount = (argc > 8 ? std::atoi(argv[8]) : -1); // only test if specified
 
   // Set up multi-resolution pyramid
-  using PyramidType = itk::VkMultiResolutionPyramidImageFilter<ImageType, ImageType>;
-  using ScheduleType = PyramidType::ScheduleType;
-
   auto pyramidFilter = PyramidType::New();
   pyramidFilter->SetInput(inputImage);
-  pyramidFilter->SetUseShrinkImageFilter(useShrinkFilter);
 
-  // Use default schedule
+  pyramidFilter->SetUseShrinkImageFilter(useShrinkFilter);
+  ITK_TEST_SET_GET_VALUE(pyramidFilter->GetUseShrinkImageFilter(), useShrinkFilter);
+
+  // Verify isotropic radius
+  unsigned int   isotropicRadiusSize = 10;
+  KernelSizeType radius;
+  radius.Fill(isotropicRadiusSize);
+  pyramidFilter->SetKernelRadiusThreshold(isotropicRadiusSize);
+  ITK_TEST_SET_GET_VALUE(pyramidFilter->GetKernelRadiusThreshold(), radius);
+
+  // Verify anisotropic radius
+  pyramidFilter->SetKernelRadiusThreshold(kernelRadiusThreshold);
+  ITK_TEST_SET_GET_VALUE(pyramidFilter->GetKernelRadiusThreshold(), kernelRadiusThreshold);
+
+  // Verify threshold condition for switching to FFT smoothing
+  pyramidFilter->SetKernelThresholdDimension(kernelThresholdDimension);
+  ITK_TEST_SET_GET_VALUE(pyramidFilter->GetKernelThresholdDimension(), kernelThresholdDimension);
+
+  // Use default schedule for testing
   pyramidFilter->SetNumberOfLevels(numLevels);
 
-  // TODO set schedule by specifying the starting shrink factors
-  /*numLevels = 4;
-  factors[0] = 8;
-  factors[1] = 4;
-  factors[2] = 2;
-  pyramid->SetNumberOfLevels(numLevels);
-  pyramid->SetStartingShrinkFactors(factors.Begin());*/
-
-  // TODO test get variance
-  using RadiusSizeType = typename PyramidType::OutputSizeType;
-  RadiusSizeType radius, prevRadius;
+  // Verify kernel variance and radius match expectations for default schedule
+  KernelSizeType prevRadius;
+  unsigned int   fftCount = 0;
   for (unsigned int level = 0; level < numLevels; ++level)
   {
     auto schedule = pyramidFilter->GetSchedule();
     auto variance = pyramidFilter->GetVariance(level);
     radius = pyramidFilter->GetKernelRadius(level);
+    auto useFFT = pyramidFilter->GetUseFFT(radius);
+
+    std::cout << "FFT will " << (useFFT ? "" : "not ") << "be used for level " << level << " with radius " << radius
+              << std::endl;
+    if (useFFT)
+      ++fftCount;
 
     for (unsigned int dim = 0; dim < ImageDimension; ++dim)
     {
+      // Verify variance output
       ITK_TEST_EXPECT_TRUE(itk::Math::AlmostEquals(variance[dim], itk::Math::sqr(0.5 * schedule[level][dim])));
+
+      // Verify kernel radius output
       // Full calculations for default Gaussian size are outside the scope of this test
       // so just test that radius decreases with level
       if (level > 0)
@@ -108,25 +144,23 @@ itkVkMultiResolutionPyramidImageFilterTest(int argc, char * argv[])
     }
   }
 
-  // TODO test get kernel radius
+  if (expectedFFTCount != -1)
+  {
+    // Test number of levels for FFT smoothing matches expectations
+    ITK_TEST_EXPECT_EQUAL(fftCount, expectedFFTCount);
+  }
 
-  // TODO test using recursive filter for additional speedup
   ITK_EXERCISE_BASIC_OBJECT_METHODS(
     pyramidFilter, VkMultiResolutionPyramidImageFilter, MultiResolutionPyramidImageFilter);
 
+  // Run the filter and track progress
   ShowProgressObject                                    progressWatch(pyramidFilter);
   itk::SimpleMemberCommand<ShowProgressObject>::Pointer command;
   command = itk::SimpleMemberCommand<ShowProgressObject>::New();
   command->SetCallbackFunction(&progressWatch, &ShowProgressObject::ShowProgress);
   pyramidFilter->AddObserver(itk::ProgressEvent(), command);
-
   pyramidFilter->Update();
 
-  //  update pyramid at a particular level
-  /*for (unsigned int testLevel = 0; testLevel < numLevels; ++testLevel)
-  {
-    pyramid->GetOutput(testLevel)->Update();
-  }*/
   for (unsigned int ilevel = 0; ilevel < numLevels; ++ilevel)
   {
     itk::WriteImage(pyramidFilter->GetOutput(ilevel), argv[2] + std::to_string(ilevel) + ".mhd");

@@ -102,7 +102,9 @@ itk_add_test(NAME itkVkMultiResolutionPyramidImageFilterTest
   itkVkMultiResolutionPyramidImageFilterTest
   DATA{Input/TreeBarkTexture.png}
   ${ITK_TEST_OUTPUT_DIR}/itkVkMultiResolutionPyramidImageFilterTest
-  0 # kernelCondition
+  10 # kernelRadiusThreshold dim 0
+  12 # kernelRadiusThreshold dim 1
+  1  # threshold dimension
   0 # useShrinkFilter
   5 # numLevels
 )
