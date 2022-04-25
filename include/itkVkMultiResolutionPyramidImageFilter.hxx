@@ -137,7 +137,6 @@ VkMultiResolutionPyramidImageFilter<TInputImage, TOutputImage>::GenerateData()
     }
 
     // use mini-pipeline to compute output
-    std::cout << "ilevel: " << ilevel << " use smoothing: " << useFFTSmoothing << std::endl;
     if (GetUseFFT(this->GetKernelRadius(ilevel)))
     {
       smoother = fftSmoother;
