@@ -11,6 +11,7 @@ set(VkFFTBackendTests
   itkVkGlobalConfigurationTest.cxx
   itkVkHalfHermitianFFTImageFilterTest.cxx
   itkVkInverse1DFFTImageFilterBaselineTest.cxx
+  itkVkMultiResolutionPyramidImageFilterTest.cxx
   )
 
 include_directories(${VkFFTBackend_INCLUDE_DIRS})
@@ -95,3 +96,13 @@ itk_add_test(NAME itkVkFFTImageFilterFactoryTest
 itk_add_test(NAME itkVkGlobalConfigurationTest
   COMMAND VkFFTBackendTestDriver
   itkVkGlobalConfigurationTest)
+
+itk_add_test(NAME itkVkMultiResolutionPyramidImageFilterTest
+  COMMAND VkFFTBackendTestDriver
+  itkVkMultiResolutionPyramidImageFilterTest
+  DATA{Input/TreeBarkTexture.png}
+  ${ITK_TEST_OUTPUT_DIR}/itkVkMultiResolutionPyramidImageFilterTest
+  0 # kernelCondition
+  0 # useShrinkFilter
+  5 # numLevels
+)

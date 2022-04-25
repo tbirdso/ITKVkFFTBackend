@@ -2,6 +2,7 @@ set(VkFFTBackend_SRCS
   itkVkCommon.cxx
   itkVkGlobalConfiguration.cxx
   itkVkFFTImageFilterInitFactory.cxx
+  itkVkMultiResolutionPyramidImageFilter.cxx
   )
 
 itk_module_add_library(VkFFTBackend ${VkFFTBackend_SRCS})
