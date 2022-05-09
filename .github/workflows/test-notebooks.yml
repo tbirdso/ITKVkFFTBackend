@@ -1,0 +1,23 @@
+name: Notebook tests
+
+on: [push, pull_request]
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    name: Test notebooks with nbmake
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-python@v3
+        with:
+          python-version: '3.10'
+      - name: Install test dependencies
+        run: |
+          python3 --version
+          python3 -m pip install --upgrade pip
+          python3 -m pip install numpy matplotlib itk itk-vkfft pytest nbmake
+          python3 -m pip list
+          python3 -c "import itk; itk.auto_progress(2); print(itk.VkForwardFFTImageFilter.values())"
+      - name: Test notebooks
+        run: |
+          pytest --nbmake --nbmake-timeout=3000  example/*ipynb
